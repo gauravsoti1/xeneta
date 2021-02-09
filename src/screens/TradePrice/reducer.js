@@ -6,8 +6,10 @@ export const UPDATE_SELECTED_TO_DATE = "UPDATE_SELECTED_TO_DATE";
 export const initialState = {
   fromPort: null,
   toPort: null,
-  fromDate: new Date("2021-01-02"),
-  toDate: new Date("2021-01-03"),
+  fromDate: null,
+  // fromDate: new Date("2021-01-02"),
+  toDate: null,
+  // toDate: new Date("2021-01-03"),
 };
 
 export function updateFromPortAction(port) {

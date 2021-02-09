@@ -3,6 +3,7 @@ import { stringify } from "query-string";
 export const sendRequest = ({ url, method, headers = {}, queryParams }) => {
   let mergedHeaders = new Headers({
     "content-type": "application/json",
+    "x-api-key": "8QlhKoDjavHlv4oacpAG1ljdDa01FoN9pBK3JXbc",
     ...headers,
   });
   // don't stringify when uploading form data

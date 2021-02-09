@@ -1,4 +1,4 @@
-import React, { useReducer } from "react";
+import React, { useEffect, useReducer } from "react";
 import PortAutocomplete from "components/PortAutocomplete";
 import styled from "styled-components";
 import {
@@ -8,8 +8,9 @@ import {
   updateToPortAction,
 } from "./reducer";
 import TradePriceGraph from "./TradePriceGraph";
+import { getPorts } from "api/port";
 
-export default function TradePrice() {
+export default function TradePrice({ ports }) {
   const [state, dispatch] = useReducer(reducer, initialState);
   return (
     <div>
@@ -17,13 +18,20 @@ export default function TradePrice() {
         label="From"
         selectedPort={state.fromPort}
         onChange={(e, port) => dispatch(updateFromPortAction(port))}
+        options={ports}
       />
       <PortAutocomplete
         label="To"
         selectedPort={state.toPort}
         onChange={(e, port) => dispatch(updateToPortAction(port))}
+        options={ports}
       />
-      <TradePriceGraph fromDate={state.fromDate} toDate={state.toDate} />
+      <TradePriceGraph
+        fromDate={state.fromDate}
+        toDate={state.toDate}
+        origin={state.fromPort}
+        destination={state.toPort}
+      />
     </div>
   );
 }

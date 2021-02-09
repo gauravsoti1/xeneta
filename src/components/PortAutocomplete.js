@@ -13,7 +13,12 @@ const options = [
   },
 ];
 
-export default function PortAutocomplete({ selectedPort, label, onChange }) {
+export default function PortAutocomplete({
+  selectedPort,
+  label,
+  onChange,
+  options,
+}) {
   return (
     <Autocomplete
       id="from-port-autocomplete"
