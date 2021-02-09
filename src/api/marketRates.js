@@ -1,4 +1,5 @@
 import { MARKET_RATES_ENDPOINT } from "endpoints";
+import { convertDateToString2 } from "util/date";
 import { sendRequest } from "util/sendRequest";
 
 function parseMarketRates(data) {
@@ -6,7 +7,7 @@ function parseMarketRates(data) {
     mean: marketRate.mean || 0,
     low: marketRate.low || 0,
     high: marketRate.high || 0,
-    day: marketRate.day,
+    day: convertDateToString2(new Date(marketRate.day)),
     date: new Date(marketRate.day),
   }));
 }

@@ -9,7 +9,11 @@ export const setStartOfTheDayTime = (date) => {
 };
 
 export const convertDateToString1 = (date) => {
-  return format(date, "yyyy-MM-dd");
+  return format(date, "dd MMM yyyy");
+};
+
+export const convertDateToString2 = (date) => {
+  return format(date, "dd MMM yy");
 };
 
 export function isBetweenTwoDates(fromDate, toDate) {
