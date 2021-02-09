@@ -1,6 +1,13 @@
-import { Button, Checkbox, FormControlLabel } from "@material-ui/core";
+import { Button, Paper, Typography } from "@material-ui/core";
+import { Skeleton } from "@material-ui/lab";
+import {
+  apiStatusSetCompletedAction,
+  apiStatusSetLoadingAction,
+  apiStatusUpdateAction,
+  API_STATUSES,
+} from "actions/apiStatus";
 import { getMarketRates } from "api/marketRates";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import {
   ResponsiveContainer,
   Tooltip,
@@ -9,51 +16,11 @@ import {
   LineChart,
   Line,
 } from "recharts";
-
-// const marketRates = [
-//   {
-//     day: "2021-01-01", // new Date("2021-01-01")
-//     mean: 500,
-//     low: 100,
-//     high: 800,
-//   },
-//   {
-//     day: "2021-01-02",
-//     mean: null,
-//     low: null,
-//     high: null,
-//   },
-//   {
-//     day: "2021-01-03",
-//     mean: 600,
-//     low: 100,
-//     high: 900,
-//   },
-// ];
-
-// const data = marketRates.map((marketRate) => ({
-//   mean: marketRate.mean || 0,
-//   low: marketRate.low || 0,
-//   high: marketRate.high || 0,
-//   day: marketRate.day,
-//   date: new Date(marketRate.day),
-// }));
-// 
-
-const AVAILABLE_METRICS = {
-  mean: {
-    key: "mean",
-    display: "Average",
-  },
-  low: {
-    key: "low",
-    display: "Low",
-  },
-  high: {
-    key: "high",
-    display: "High",
-  },
-};
+import apiStatusReducer, { buildInitialState } from "reducers/apiStatus";
+import styled from "styled-components";
+import { isBetweenTwoDates } from "util/date";
+import { AVAILABLE_METRICS, downloadGraph } from "./helper";
+import MetricFiltersComponent from "./MetricFiltersComponent";
 
 export default function TradePriceGraph({
   fromDate,
@@ -63,42 +30,41 @@ export default function TradePriceGraph({
 }) {
   const [marketRates, setMarketRates] = useState([]);
   const [selectedMetric, setMetric] = useState(AVAILABLE_METRICS.mean.key);
+  const [apiStatus, apiStatusDispatch] = useReducer(
+    apiStatusReducer,
+    buildInitialState(API_STATUSES.complete)
+  );
   const originCode = origin?.code;
   const destinationCode = destination?.code;
 
   useEffect(() => {
     if (!originCode || !destinationCode) return;
-    getMarketRates({ origin: originCode, destination: destinationCode }).then(
-      (marketRates) => setMarketRates(marketRates)
-    );
+    apiStatusDispatch(apiStatusSetLoadingAction());
+    getMarketRates({ origin: originCode, destination: destinationCode })
+      .then((marketRates) => setMarketRates(marketRates))
+      .then(() => apiStatusDispatch(apiStatusSetCompletedAction()))
+      .catch((error) => {
+        setMarketRates([]);
+        apiStatusDispatch(
+          apiStatusUpdateAction({
+            state: API_STATUSES.error,
+            message: !error.status
+              ? "Our team is currently working on getting data for this route."
+              : error.message,
+          })
+        );
+      });
   }, [originCode, destinationCode]);
 
   const tradePriceGraphContainer = useRef(null);
+  const downloadTradePricesGraph = downloadGraph(tradePriceGraphContainer);
+
   const filteredData = useMemo(() => {
     if (fromDate && toDate) {
-      const fromDateTime = fromDate.getTime(),
-        toDateTime = toDate.getTime();
-      return marketRates.filter((marketRate) => {
-        const currentDateTime = marketRate.date.getTime();
-        return currentDateTime >= fromDateTime && currentDateTime <= toDateTime;
-      });
+      const isDateBetween = isBetweenTwoDates(fromDate, toDate);
+      return marketRates.filter((marketRate) => isDateBetween(marketRate.date));
     } else return marketRates;
   }, [fromDate, toDate, JSON.stringify(marketRates)]);
-
-  function downloadGraph() {
-    const graph = tradePriceGraphContainer.current;
-    const svg = graph.getElementsByTagName("svg")[0];
-    // svg.style.background = "white";
-    var svgData = svg.outerHTML;
-    var svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
-    var svgUrl = URL.createObjectURL(svgBlob);
-    var downloadLink = document.createElement("a");
-    downloadLink.href = svgUrl;
-    downloadLink.download = "tradePriceGraph.svg";
-    document.body.appendChild(downloadLink);
-    downloadLink.click();
-    document.body.removeChild(downloadLink);
-  }
 
   function onMetricChange(event) {
     const target = event.target;
@@ -106,51 +72,84 @@ export default function TradePriceGraph({
     setMetric(value);
   }
 
+  const errorPresent = apiStatus.state === API_STATUSES.error;
+  const isLoading = apiStatus.state === API_STATUSES.loading;
+  const routePresent = originCode && destinationCode;
   return (
-    <div ref={tradePriceGraphContainer} id="tradePriceGraphContainer">
-      <ResponsiveContainer width={"100%"} aspect={4}>
-        <LineChart data={filteredData}>
-          <XAxis dataKey="day" />
-          <YAxis
-            dataKey={selectedMetric}
-            unit="$"
-            name="Average Trade Price"
-            tickCount={20}
-          />
-          <Tooltip cursor={false} />
-          <Line
-            type="monotone"
-            dataKey={selectedMetric}
-            stroke="#8884d8"
-            activeDot={{ r: 8 }}
-          />
-          {/* <Bar dataKey="count" maxBarSize={20}>
-            {data.map((obj) => (
-              <Cell fill={obj.color} />
-            ))}
-          </Bar> */}
-        </LineChart>
-      </ResponsiveContainer>
-      {Object.values(AVAILABLE_METRICS).map((metric) => {
-        console.log(
-          "🚀 ~ file: TradePriceGraph.js ~ line 128 ~ {Object.values ~ metric",
-          metric
-        );
-        return (
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={selectedMetric === metric.key}
-                name={"selectedMetric"}
-                value={metric.key}
-                onChange={onMetricChange}
-              />
-            }
-            label={metric.display}
-          />
-        );
-      })}
-      <Button onClick={downloadGraph}>Download graph</Button>
-    </div>
+    <>
+      <Container ref={tradePriceGraphContainer} id="tradePriceGraphContainer">
+        <DownloadGraphContainer>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={downloadTradePricesGraph}
+            disabled={!routePresent || !marketRates?.length}
+          >
+            Download graph
+          </Button>
+        </DownloadGraphContainer>
+        {isLoading ? (
+          <LoadingView />
+        ) : (
+          !errorPresent && (
+            <ResponsiveContainer width={"100%"} aspect={4}>
+              <LineChart data={filteredData}>
+                <XAxis dataKey="day" />
+                <YAxis
+                  dataKey={selectedMetric}
+                  unit="$"
+                  name="Average Trade Price"
+                  tickCount={20}
+                />
+                <Tooltip cursor={false} />
+                <Line
+                  type="monotone"
+                  dataKey={selectedMetric}
+                  stroke={AVAILABLE_METRICS[selectedMetric]?.color}
+                  activeDot={{ r: 8 }}
+                  strokeWidth={2}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          )
+        )}
+        <div>
+          {!errorPresent && (
+            <MetricFiltersComponent
+              selectedMetric={selectedMetric}
+              onMetricChange={onMetricChange}
+            />
+          )}
+        </div>
+        <ErrorView>
+          <Typography color="error"> {apiStatus?.message} </Typography>
+        </ErrorView>
+      </Container>
+    </>
   );
 }
+
+const LoadingView = styled(Skeleton)`
+  margin: 0 auto;
+  width: 85%;
+  height: 50vh;
+`;
+
+const ErrorView = styled.div`
+  width: 85%;
+  height: 50vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+`;
+
+const DownloadGraphContainer = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  padding-bottom: 2rem;
+`;
+
+const Container = styled(Paper)`
+  margin: 2rem 0;
+  padding: 2rem;
+`;

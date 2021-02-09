@@ -12,52 +12,80 @@ import {
 import TradePriceGraph from "./TradePriceGraph";
 import { getPorts } from "api/port";
 import DatePickerWrapper from "components/DatePickerWrapper";
-import { TextField } from "@material-ui/core";
+import {
+  InputAdornment,
+  Paper,
+  TextField,
+  Typography,
+} from "@material-ui/core";
+import { convertDateToString1 } from "util/date";
+import DateRangeOutlinedIcon from "@material-ui/icons/DateRangeOutlined";
 
-export default function TradePrice({ ports }) {
+export default function TradePrice() {
   const [state, dispatch] = useReducer(reducer, initialState);
+  const [ports, setPorts] = useState([]);
   const [isFromDatePickerOpen, setFromDatePicker] = useState(false);
-  console.log(
-    "🚀 ~ file: TradePrice.js ~ line 20 ~ TradePrice ~ isFromDatePickerOpen",
-    isFromDatePickerOpen
-  );
   const [isToDatePickerOpen, setToDatePicker] = useState(false);
+
+  useEffect(() => {
+    getPorts()
+      .then((ports) => setPorts(ports))
+      .catch((err) => console.error("An error occured", err));
+  }, []);
+
+  const dateFilterInputProps = {
+    startAdornment: (
+      <InputAdornment position="start">
+        <DateRangeOutlinedIcon />
+      </InputAdornment>
+    ),
+    readOnly: true,
+  };
   return (
-    <div>
-      <PortAutocomplete
-        label="From"
-        selectedPort={state.fromPort}
-        onChange={(e, port) => dispatch(updateFromPortAction(port))}
-        options={ports}
-      />
-      <PortAutocomplete
-        label="To"
-        selectedPort={state.toPort}
-        onChange={(e, port) => dispatch(updateToPortAction(port))}
-        options={ports}
-      />
-      <TextField
-        label="From"
-        value={state.fromDate?.toString()}
-        onClick={() => setFromDatePicker((state) => !state)}
-      />
-      <TextField
-        label="To"
-        value={state.toDate?.toString()}
-        onClick={() => setToDatePicker((state) => !state)}
-      />
+    <Container>
+      <Heading align="center" variant="h6" color="primary">
+        Trade Prices
+      </Heading>
+      <OriginDestinationFilters>
+        <PortAutocomplete
+          label="Origin"
+          selectedPort={state.fromPort}
+          onChange={(e, port) => dispatch(updateFromPortAction(port))}
+          options={ports.filter((port) => port.code !== state.toPort?.code)}
+        />
+        <PortAutocomplete
+          label="Destination"
+          selectedPort={state.toPort}
+          onChange={(e, port) => dispatch(updateToPortAction(port))}
+          options={ports.filter((port) => port.code !== state.fromPort?.code)}
+        />
+        <TextField
+          type="text"
+          variant="outlined"
+          label="From"
+          value={state.fromDate ? convertDateToString1(state.fromDate) : ""}
+          onClick={() => setFromDatePicker((state) => !state)}
+          InputProps={dateFilterInputProps}
+        />
+        <TextField
+          type="text"
+          variant="outlined"
+          label="To"
+          value={state.toDate ? convertDateToString1(state.toDate) : ""}
+          onClick={() => setToDatePicker((state) => !state)}
+          InputProps={dateFilterInputProps}
+        />
+      </OriginDestinationFilters>
 
       <DatePickerWrapper
         selectedDate={state.fromDate}
         onChange={(date) => dispatch(updateFromDateAction(date))}
-        // onOpen={() => setFromDatePicker(true)}
         onClose={() => setFromDatePicker(false)}
         isOpen={isFromDatePickerOpen}
       />
       <DatePickerWrapper
         selectedDate={state.toDate}
         onChange={(date) => dispatch(updateToDateAction(date))}
-        // onOpen={() => setToDatePicker(true)}
         onClose={() => setToDatePicker(false)}
         isOpen={isToDatePickerOpen}
       />
@@ -68,12 +96,25 @@ export default function TradePrice({ ports }) {
         origin={state.fromPort}
         destination={state.toPort}
       />
-    </div>
+    </Container>
   );
 }
 
 const Container = styled.div`
-  height: 100vh;
-  width: 100%;
-  background: ${(props) => props.theme.palette.background.default};
+  min-height: 100vh;
+  width: calc(100% - 4rem);
+  padding: 1rem;
+  padding: 16px;
+  margin: 0 auto;
+  margin-left: 2rem;
+`;
+
+const OriginDestinationFilters = styled(Paper)`
+  display: flex;
+  justify-content: space-evenly;
+`;
+
+const Heading = styled(Typography)`
+  margin-bottom: 2rem;
+  margin-top: 1rem;
 `;
