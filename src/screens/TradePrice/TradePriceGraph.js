@@ -38,7 +38,7 @@ import {
 //   day: marketRate.day,
 //   date: new Date(marketRate.day),
 // }));
-// console.log("🚀 ~ file: TradePriceGraph.js ~ line 46 ~ data ~ data", data);
+// 
 
 const AVAILABLE_METRICS = {
   mean: {

@@ -1,6 +1,6 @@
 export const UPDATE_SELECTED_FROM_PORT = "UPDATE_SELECTED_FROM_PORT";
 export const UPDATE_SELECTED_TO_PORT = "UPDATE_SELECTED_TO_PORT";
-export const UPDATE_SELECTED_FROM_DATE = "UPDATE_SELECTED_TO_DATE";
+export const UPDATE_SELECTED_FROM_DATE = "UPDATE_SELECTED_FROM_DATE";
 export const UPDATE_SELECTED_TO_DATE = "UPDATE_SELECTED_TO_DATE";
 
 export const initialState = {
@@ -18,6 +18,14 @@ export function updateFromPortAction(port) {
 
 export function updateToPortAction(port) {
   return { type: UPDATE_SELECTED_TO_PORT, payload: port };
+}
+
+export function updateFromDateAction(date) {
+  return { type: UPDATE_SELECTED_FROM_DATE, payload: date };
+}
+
+export function updateToDateAction(date) {
+  return { type: UPDATE_SELECTED_TO_DATE, payload: date };
 }
 
 export const reducer = (state = initialState, action) => {
